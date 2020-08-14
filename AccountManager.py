@@ -17,10 +17,10 @@ seperator = '~~~'
 ahk = AHK(executable_path='AutoHotkey.exe')
 
 # TO DO:
-# Fix Bug that only allows 1 account to be added at a time
-# Make it into an .exe file
+# DONE! Fix Bug that only allows 1 account to be added at a time
+# DONE! Make it into an .exe file
 # Encrypt the info?
-# include a file searching gui to allow to modify if the file is not found (for game location)
+# DONE! include a file searching gui to allow to modify if the file is not found (for game location)
 # DONE! Include a file reading function to modify the dictionary based on whats inside
 # DONE! warn user if they enter a ~, or make it a special code -  {seperator}
 # progress bar?
@@ -33,43 +33,18 @@ ahk = AHK(executable_path='AutoHotkey.exe')
 # DONE! then section off the area of the window to omptimize this more
 
 
-userDict = {}
 infoPath = 'Files\\info.txt'
 leaguePathFilePath = 'Files\\FilePath.txt'
 
 PathFile = open(leaguePathFilePath, 'r')
 leaguePath =  PathFile.readline().replace('/','\\')
+PathFile.close()
 
 sg.theme('LightBlue6')
 
+userDict = {}
 
 # returns a layout variable to whats currently on the text document and updates the UserDict
-def updateLayout():
-    # clear userDict
-    userDict = {}
-
-    # read file, create list of lines, close file
-    infoFile = open(infoPath, 'r')
-    listOfInfo = infoFile.readlines()
-    infoFile.close()
-
-    # enter values into userDct and create layout
-    for s in listOfInfo:
-        info = s.split(seperator)
-        userDict[info[0]] = [info[1],info[2]]
-
-    # sg.FileBrowse(key = 'browse',button_text='Browse File Path for League',font =("Times New Roman", 24),button_color=('white', 'green'))
-    layout = [sg.Button('Add Accounts', font=("Times New Roman", 24),button_color=('white', 'green'))],
-
-    rowNum = 0
-    for n in userDict.keys():
-        layout += [sg.Button(n, font=("Times New Roman", 24)), sg.Button("X", button_color=('white', 'red'),font=("Times New Roman", 24), key="-delete-" + str(rowNum))],
-        rowNum += 1
-
-
-    layout += [sg.Button('Quit',button_color=('black', 'red'), font=("Times New Roman", 24))],
-
-    return userDict,layout
 
 # Deletes line found at num
 def delLine(num):
@@ -86,52 +61,94 @@ def delLine(num):
     new_file.close()
 
 #
-def setWin():
-    return sg.Window("Frank's League Account Manager", layout1)
+def setWin1():
+    # clear userDict
+    global userDict
+    userDict = {}
+
+    # read file, create list of lines, close file
+    infoFile = open(infoPath, 'r')
+    listOfInfo = infoFile.readlines()
+    infoFile.close()
+
+    # enter values into userDct and create layout
+    for s in listOfInfo:
+        info = s.split(seperator)
+        userDict[info[0]] = [info[1], info[2]]
+
+    # Heres what this really long line says:
+    # Hidden input (so filebrowse triggers events), browse button, add accounts button
+    layout = [sg.Input(key = '-FILE-',visible= False, enable_events= True),sg.FileBrowse(button_text='Browse File Path for League',font =("Times New Roman", 24),button_color=('white', 'green')),sg.Button('Add Accounts', font=("Times New Roman", 24), button_color=('white', 'green'))],
+
+    rowNum = 0
+    for n in userDict.keys():
+        layout += [sg.Button(n, font=("Times New Roman", 24)),
+                   sg.Button("X", button_color=('white', 'red'), font=("Times New Roman", 24),
+                             key="-delete-" + str(rowNum))],
+        rowNum += 1
+
+    layout += [sg.Button('Quit', button_color=('black', 'red'), font=("Times New Roman", 24))],
+
+
+    return sg.Window("Frank's League Account Manager", layout, finalize= True)
+
+
+def setWin2():
+    layout = [[sg.Text('Account Name'), sg.InputText(key='-IN-name')],
+               [sg.Text('Username'), sg.InputText(key='-IN-user')],
+               [sg.Text('Password'), sg.InputText(key='-IN-pass')],
+               [sg.Submit(button_color=('white', 'green')), sg.Cancel(button_color=('white', 'red'))]]
+    return  sg.Window("Add Accounts", layout, finalize= True)
 
 # Creates windows are account selection and creation
-layout2 = [[sg.Text('Account Name'), sg.InputText(key='-IN-name')],
-           [sg.Text('Username'), sg.InputText(key='-IN-user')],
-            [sg.Text('Password'), sg.InputText(key='-IN-pass')],
-                 [sg.Submit(button_color=('white', 'green')), sg.Cancel(button_color=('white', 'red'))]]
 
 
-userDict, layout1 = updateLayout()
-
-win1 = setWin()
-
+win1,win2 = setWin1(), None
 # handle account selection here
 while True:
-    ev1, vals1 = win1.Read()
+    window ,event, values = sg.read_all_windows()
 
-    if ev1 == sg.WIN_CLOSED or ev1 == 'Quit':
+    # Window 1
+    if window == win1 and event in (sg.WIN_CLOSED,'Quit'):
         raise SystemExit(0)
-    elif ev1.__contains__("-delete-"):
-        rowNum = ev1.replace('-delete-','')
+    elif event.__contains__("-delete-"):
+        rowNum = event.replace('-delete-','')
         delLine(int(rowNum))
         win1.close()
-        userDict, layout1 = updateLayout()
-        win1 = setWin()
-    elif ev1 == 'Add Accounts':
-        while True:
-            win2 = sg.Window("Add Accounts", layout2)
-            ev2, vals2 = win2.Read()
+        win1 = setWin1()
+    elif event == 'Add Accounts' and not win2:
+        win2 = setWin2()
+    elif event == '-FILE-' and not win2:
+        path = values['-FILE-']
 
-            if ev2 == sg.WIN_CLOSED or ev2 == 'Cancel':
-                win2.close()
-                break
-            else:
-                f = open(infoPath, "a+")
-                f.write(vals2['-IN-name'] + seperator + vals2['-IN-user'] + seperator + vals2['-IN-pass'] + '\n')
-                win2.close()
-                f.close()
-                win1.close()
-                userDict, layout1 = updateLayout()
-                win1 = setWin()
-                break
-    else:
-        userName, password = userDict[ev1][0] , userDict[ev1][1]
+        PathFile = open(leaguePathFilePath, 'w+')
+        PathFile.write(path)
+        PathFile.close()
+
+        PathFile = open(leaguePathFilePath, 'r')
+        leaguePath = PathFile.readline().replace('/', '\\')
+        PathFile.close()
+
+    elif not win2:
+        userName, password = userDict[event][0] , userDict[event][1]
         break
+
+    # Window 2
+    if window == win2 and event in (sg.WIN_CLOSED,'Cancel'):
+        win2.close()
+        win2 = None
+    elif window == win2 and event == 'Submit':
+        f = open(infoPath, "a+")
+        f.write(values['-IN-name'] + seperator + values['-IN-user'] + seperator + values['-IN-pass'] + '\n')
+        f.close()
+        win2.close()
+        win1.close()
+        win1 = setWin1()
+
+
+# close win2 if its still open
+if win2 is not None:
+    win2.close()
 
 
 try:
