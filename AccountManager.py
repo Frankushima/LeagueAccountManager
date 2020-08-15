@@ -12,7 +12,7 @@ import PySimpleGUI as sg
 from ahk import AHK
 
 
-seperator = '~~~'
+seperator = f'--seperator--'
 
 ahk = AHK(executable_path='AutoHotkey.exe')
 
@@ -200,9 +200,10 @@ time.sleep(0.1)
 
 userLoc = ahk.image_search(image_path='ReferenceImages\\usernameBox.jpg', color_variation=70,upper_bound= [winX,winY],lower_bound = [winX2,winY2])
 ahk.click(userLoc[0] + 150, userLoc[1] + 30)
-ahk.type(userName)
+# ahk.type() doesn't work for equal signs
+ag.write(userName)
 
 passLoc = ahk.image_search(image_path = 'ReferenceImages\\passwordBox.jpg', color_variation= 70,upper_bound= [winX,winY],lower_bound = [winX2,winY2])
 ahk.click(passLoc[0] + 150,passLoc[1] + 30)
-ahk.type(password)
+ag.write(password)
 ahk.send_event('{Enter}')
