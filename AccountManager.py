@@ -32,6 +32,10 @@ ahk = AHK(executable_path='AutoHotkey.exe')
 # DONE! find window coords to optimize this
 # DONE! then section off the area of the window to omptimize this more
 
+# Reminders
+# When compiling as an EXE add:
+# ahk.exe, the ahk/templates folder, the reference images, and Files folder
+
 
 infoPath = 'Files\\info.txt'
 leaguePathFilePath = 'Files\\FilePath.txt'
@@ -142,6 +146,7 @@ while True:
         f.write(values['-IN-name'] + seperator + values['-IN-user'] + seperator + values['-IN-pass'] + '\n')
         f.close()
         win2.close()
+        win2 = None
         win1.close()
         win1 = setWin1()
 
