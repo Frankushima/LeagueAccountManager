@@ -13,8 +13,10 @@ import pickle
 from ahk import AHK
 
 
+
 seperator = f'--seperator--'
 
+#./ means look in directory?
 ahk = AHK(executable_path='AutoHotkey.exe')
 
 # TO DO:
