@@ -10,8 +10,11 @@ Features:
 - Infinitely scales with mulitple accounts
 
 Roadmap:
-- Encrypted account info
-- Auto Accept scripts
+- Prebuilt Binaries
+	- Read how to add the stuff I needed "ahk folder" and "reference images" into the compiled .exe with launch options
+	- Or maybe modify the .spec file?
+	- Use NSIS?
+	- Make a download link in github page
+
 
 Known Bugs:
-- None!

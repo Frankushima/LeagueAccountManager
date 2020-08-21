@@ -9,6 +9,7 @@ import subprocess
 import time
 import pyautogui as ag
 import PySimpleGUI as sg
+import pickle
 from ahk import AHK
 
 
@@ -19,7 +20,7 @@ ahk = AHK(executable_path='AutoHotkey.exe')
 # TO DO:
 # DONE! Fix Bug that only allows 1 account to be added at a time
 # DONE! Make it into an .exe file
-# Encrypt the info?
+# DONE! Encrypt the info? - Pickle it
 # DONE! include a file searching gui to allow to modify if the file is not found (for game location)
 # DONE! Include a file reading function to modify the dictionary based on whats inside
 # DONE! warn user if they enter a ~, or make it a special code -  {seperator}
@@ -37,59 +38,36 @@ ahk = AHK(executable_path='AutoHotkey.exe')
 # ahk.exe, the ahk/templates folder, the reference images, and Files folder
 
 
-infoPath = 'Files\\info.txt'
-leaguePathFilePath = 'Files\\FilePath.txt'
+# Open pickled objects or intialize defaults
 
-PathFile = open(leaguePathFilePath, 'r')
-leaguePath =  PathFile.readline().replace('/','\\')
-PathFile.close()
+leaguePath = ''
+userDict = {}
+
+try:
+    path_Pickle_in = open("path.pickle", "rb")
+    leaguePath = pickle.load(path_Pickle_in)
+
+    userDict_Pickle_in = open("userDict.pickle", "rb")
+    userDict = pickle.load(userDict_Pickle_in)
+
+except FileNotFoundError:
+    leaguePath = 'C:\\Riot Games\\League of Legends\\LeagueClient.exe'
+    userDict = {}
 
 sg.theme('LightBlue6')
 
-userDict = {}
 
 # returns a layout variable to whats currently on the text document and updates the UserDict
-
-# Deletes line found at num
-def delLine(num):
-    infoFile = open(infoPath, 'r')
-    lines = infoFile.readlines()
-    infoFile.close()
-
-    del(lines[num])
-
-    new_file = open(infoPath, "w+")
-    for line in lines:
-        new_file.write(line)
-
-    new_file.close()
-
-#
 def setWin1():
-    # clear userDict
-    global userDict
-    userDict = {}
-
-    # read file, create list of lines, close file
-    infoFile = open(infoPath, 'r')
-    listOfInfo = infoFile.readlines()
-    infoFile.close()
-
-    # enter values into userDct and create layout
-    for s in listOfInfo:
-        info = s.split(seperator)
-        userDict[info[0]] = [info[1], info[2]]
 
     # Heres what this really long line says:
     # Hidden input (so filebrowse triggers events), browse button, add accounts button
     layout = [sg.Input(key = '-FILE-',visible= False, enable_events= True),sg.FileBrowse(button_text='Browse File Path for League',font =("Times New Roman", 24),button_color=('white', 'green')),sg.Button('Add Accounts', font=("Times New Roman", 24), button_color=('white', 'green'))],
 
-    rowNum = 0
-    for n in userDict.keys():
-        layout += [sg.Button(n, font=("Times New Roman", 24)),
+    for name in userDict.keys():
+        layout += [sg.Button(name, font=("Times New Roman", 24)),
                    sg.Button("X", button_color=('white', 'red'), font=("Times New Roman", 24),
-                             key="-delete-" + str(rowNum))],
-        rowNum += 1
+                             key="-delete-" + name)],
 
     layout += [sg.Button('Quit', button_color=('black', 'red'), font=("Times New Roman", 24))],
 
@@ -104,6 +82,16 @@ def setWin2():
                [sg.Submit(button_color=('white', 'green')), sg.Cancel(button_color=('white', 'red'))]]
     return  sg.Window("Add Accounts", layout, finalize= True)
 
+def pickleVals():
+    path_Pickle_out = open("path.pickle", "wb")
+    pickle.dump(leaguePath, path_Pickle_out)
+    path_Pickle_out.close()
+
+    userDict_Pickle_out = open("userDict.pickle", "wb")
+    pickle.dump(userDict, userDict_Pickle_out)
+    userDict_Pickle_out.close()
+
+
 # Creates windows are account selection and creation
 
 
@@ -114,10 +102,13 @@ while True:
 
     # Window 1
     if window == win1 and event in (sg.WIN_CLOSED,'Quit'):
+        pickleVals()
         raise SystemExit(0)
     elif event.__contains__("-delete-"):
-        rowNum = event.replace('-delete-','')
-        delLine(int(rowNum))
+        name = event.replace('-delete-','')
+
+        del userDict[name]
+
         win1.close()
         win1 = setWin1()
     elif event == 'Add Accounts' and not win2:
@@ -125,13 +116,7 @@ while True:
     elif event == '-FILE-' and not win2:
         path = values['-FILE-']
 
-        PathFile = open(leaguePathFilePath, 'w+')
-        PathFile.write(path)
-        PathFile.close()
-
-        PathFile = open(leaguePathFilePath, 'r')
-        leaguePath = PathFile.readline().replace('/', '\\')
-        PathFile.close()
+        leaguePath = path.replace('/', '\\')
 
     elif not win2:
         userName, password = userDict[event][0] , userDict[event][1]
@@ -142,9 +127,9 @@ while True:
         win2.close()
         win2 = None
     elif window == win2 and event == 'Submit':
-        f = open(infoPath, "a+")
-        f.write(values['-IN-name'] + seperator + values['-IN-user'] + seperator + values['-IN-pass'] + '\n')
-        f.close()
+
+        userDict[values['-IN-name']] = [values['-IN-user'],values['-IN-pass']]
+
         win2.close()
         win2 = None
         win1.close()
@@ -207,3 +192,6 @@ passLoc = ahk.image_search(image_path = 'ReferenceImages\\passwordBox.jpg', colo
 ahk.click(passLoc[0] + 150,passLoc[1] + 30)
 ag.write(password)
 ahk.send_event('{Enter}')
+
+# pickle all objects here
+pickleVals()
